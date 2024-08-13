@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Capture with Rectangle Overlay</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            position: relative;
+        }
+        video, canvas {
+            border: 2px solid #000;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        img {
+            display: block;
+            margin-top: 20px;
+            max-width: 100%;
+            border: 2px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <video id="video" autoplay></video>
+        <canvas id="overlay"></canvas>
+        <button id="capture">Capture Photo</button>
+        <img id="photo" alt="Captured Photo">
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('overlay');
+        const ctx = canvas.getContext('2d');
+        const captureButton = document.getElementById('capture');
+        const photo = document.getElementById('photo');
+
+        // Access the user's camera
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                video.addEventListener('loadedmetadata', () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    drawOverlay();
+                });
+            })
+            .catch(err => {
+                console.error("Error accessing the camera: " + err);
+            });
+
+        // Draw a rectangle overlay on the video
+        function drawOverlay() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 4;
+            const rectWidth = 300;
+            const rectHeight = 200;
+            const rectX = (canvas.width - rectWidth) / 2;
+            const rectY = (canvas.height - rectHeight) / 2;
+            ctx.strokeRect(rectX, rectY, rectWidth, rectHeight);
+            requestAnimationFrame(drawOverlay);
+        }
+
+        // Capture the photo, crop to the rectangle, and display it
+        captureButton.addEventListener('click', () => {
+            const rectWidth = 300;
+            const rectHeight = 200;
+            const rectX = (canvas.width - rectWidth) / 2;
+            const rectY = (canvas.height - rectHeight) / 2;
+
+            const photoCanvas = document.createElement('canvas');
+            photoCanvas.width = rectWidth;
+            photoCanvas.height = rectHeight;
+            const photoCtx = photoCanvas.getContext('2d');
+
+            // Draw only the part of the video that is inside the rectangle
+            photoCtx.drawImage(video, rectX, rectY, rectWidth, rectHeight, 0, 0, rectWidth, rectHeight);
+            photo.src = photoCanvas.toDataURL('image/png');
+        });
+    </script>
+</body>
+</html>
